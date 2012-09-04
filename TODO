@@ -1,0 +1,6 @@
+
+-keyboard redraw with label wrapped
+-change to another input method when click at settings
+-modify the methods getMoreText, at present it only get the direct children of the current matched nodes, no in-direct involved.
+for example: if two words chi=x1, chin=x2, then the input codes are ch, then only chi will be gotten, chin will not.
+maybe chin also needed to be gotten. 
