@@ -223,9 +223,10 @@ public class CandidateView extends View {
 		int y = (int)me.getY();
 		int deltX = x - mTouchX;
 		int deltY = y - mTouchY;
-		if (Math.abs(deltY) > Math.abs(deltX)) {
+		final int MIN_SPACE = 5;
+		if (Math.abs(deltY) > Math.abs(deltX) && Math.abs(deltY) > MIN_SPACE) {
 			expandCandidationView (deltY);
-		}  else if (deltX != 0) {
+		}  else if (Math.abs(deltX) > MIN_SPACE) {
 			turnPages (deltX);
 		} else {
 			return false;
@@ -234,7 +235,7 @@ public class CandidateView extends View {
 	}
 
 	private void turnPages(int deltX) {
-		if (deltX < 0 && this.mCurrPage < mPages.size()) {
+		if (deltX < 0 && this.mCurrPage < mPages.size() - 1) {
 			this.mCurrPage += 1;
 			this.invalidate();
 		} else if (deltX > 0 && this.mCurrPage > 0) {
