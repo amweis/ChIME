@@ -22,7 +22,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -257,22 +256,6 @@ public class CandidateView extends View {
 			this.invalidate();
 		}
 	}
-
-	/**
-     * For flick through from keyboard, call this method with the x coordinate of the flick 
-     * gesture.
-     * @param x
-     */
-    public void takeSuggestionAt(float x) {
-    	Log.v("ChIME", "Candidate.takeSuggestionAt " + x);
-        mTouchX = (int) x;
-        // To detect candidate
-        onDraw(null);
-        if (mSelectedIndex >= 0) {
-            mService.pickSuggestionManually(mSelectedIndex);
-        }
-        invalidate();
-    }
 
     private void removeHighlight() {
         mTouchX = OUT_OF_BOUNDS;
