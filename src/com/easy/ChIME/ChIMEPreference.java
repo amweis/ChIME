@@ -1,5 +1,5 @@
 /*
- *  Copyright (C)  Easy Technoligy, Inc.
+ *  Copyright (C)  Easy Technology, Inc.
  *
  *  Authors: Roy Wei (Wei shufeng)
  *
@@ -23,18 +23,37 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.ListPreference;
+import android.preference.Preference;
+import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+import android.view.inputmethod.InputMethodManager;
 
 public class ChIMEPreference extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 	private final String PREFERENCE_KEY = "list_preference"; 
+	private final String IME_CHANGE = "select_ime";
 	private String textType = null;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		this.addPreferencesFromResource(R.xml.preferences);
+		Preference prc = this.findPreference(IME_CHANGE);
+		prc.setOnPreferenceClickListener(new OnPreferenceClickListener () {
+
+			@Override
+			public boolean onPreferenceClick(Preference arg0) {
+				showInputMethods ();
+				return true;
+			}
+			
+		});
 	}
 	
+	protected void showInputMethods() {
+		InputMethodManager ima = (InputMethodManager)this.getSystemService(INPUT_METHOD_SERVICE);
+		ima.showInputMethodPicker();
+	}
+
 	@Override
 	protected void onPause() {
 		super.onPause();
