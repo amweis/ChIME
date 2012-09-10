@@ -13,22 +13,19 @@ class IMETestFixture : public CppUnit::TestFixture
 //	CPPUNIT_TEST(whiteSpace);
 //	CPPUNIT_TEST(find_child);
 //	CPPUNIT_TEST(skipwhiteSpace);
-	CPPUNIT_TEST(width_visit);
-	CPPUNIT_TEST(deep_visit);
+//	CPPUNIT_TEST(width_visit);
+	//CPPUNIT_TEST(deep_visit);
 	//CPPUNIT_TEST(free_text_leaf);
 	//CPPUNIT_TEST (getMoreText);
+	CPPUNIT_TEST(init_more_text_stack);
+	CPPUNIT_TEST(get_more_text);
 	CPPUNIT_TEST_SUITE_END();
 public:
 	void setUp () {
-		const char *text = "aba ¹¤\naca ÈË\nabab ÄÅ";
-		::build_text_tree ((jbyte*)text, (jbyte*)text + strlen (text));
 		cout << "setUp exit ..." << endl;
 	}
 
 	void tearDown () {
-		::free_text_leaf (root_tree);
-		::free_stack (root_stack);
-		root_stack = NULL;
 		cout << "tearDown exit ..." << endl;
 	}
 
@@ -100,15 +97,36 @@ public:
 	}
 	
 	void getMoreText () {
-		const char *text = "aa é¸Ÿäºº\nac å“ˆå“ˆ\na å·¥\n";
+		const char *text = "a a\nb b\nab ab\nac ac\nabc abc\nabd abd\n";
 		::build_text_tree ((jbyte*)text, (jbyte*)text + strlen (text));
 		stack_container *cont = ::width_visit ('a');
 		CPPUNIT_ASSERT (cont != NULL);
-		char *str = ::getMoreText (1);
-		CPPUNIT_ASSERT (str != NULL);
-		std::cout << str << std::endl;
-		free (str);
-		::free_text_leaf (root_tree);
+		cont = ::width_visit ('b');
+		CPPUNIT_ASSERT (cont != NULL);
+	}
+
+	void init_more_text_stack () {
+		const char *text = "a a\nb b\nab ab\nac ac\nabc abc1 abc2 abc3\nabd abd abd1\nabcd abcd abcd1\n";
+		std::cout << "+++++++++++++++++++++++++++++++++++" << std::endl << text
+			<< "----------------------------" << std::endl;
+		::build_text_tree ((jbyte*)text, (jbyte*)text + strlen (text));
+		stack_container *cont = ::width_visit ('a');
+		CPPUNIT_ASSERT (cont != NULL);
+		cont = ::width_visit ('b');
+		CPPUNIT_ASSERT (cont != NULL);
+
+		::init_more_children_stack ();
+		CPPUNIT_ASSERT (more_children_stack != NULL);
+	}
+
+	void get_more_text () {
+			char *buf = NULL;;
+		    while ((buf = ::get_more_text (4)) != NULL) {
+				std::cout << "get_more_text buf = " << buf << std::endl;
+				free (buf);
+			}
+			CPPUNIT_ASSERT (more_text_stack == NULL);
+			CPPUNIT_ASSERT (more_children_stack == NULL);
 	}
 };
 

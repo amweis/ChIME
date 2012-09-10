@@ -46,6 +46,11 @@ static void free_text_link(text_link *link);
 static stack_container* push_stack(stack_container* sc, void *cont); 
 static stack_container* pop_stack(stack_container *sc); 
 static int free_stack(stack_container *sc); 
+/** added @ 2012/09/10 **/
+static void free_more_children_stack ();
+static void init_more_children_stack ();
+static jint get_more_text_len (jint toget);
+static char* get_more_text (jint toget);
 
 jint Java_com_easy_ChIME_CTextGen_buildTextDict(JNIEnv* env, jobject obj,
 		jbyteArray arr, jint len);

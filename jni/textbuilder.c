@@ -5,7 +5,17 @@
 /** data declaration section */
 
 static text_leaf *root_tree = NULL;
+/**root_stack is a stack of text_leaf stack*/
 static stack_container *root_stack = NULL;
+/** more_children_stack is used to store current children leafs of current matched
+  * it will be initialized when more text wanted, and released when new code matched
+  */
+static stack_container *more_children_stack = NULL;
+/** more_text_stack is used to store the visited leafs of more_children_stack and 
+  * it's text will be presented to caller. it is initialized when visiting more_children_stack
+  * and will be released after it's content has been read.
+  */
+static stack_container *more_text_stack = NULL;
 
 /** code section */
 
@@ -350,6 +360,8 @@ static stack_container* width_visit(jint code) {
 		free_stack(matched_children);
 	} else {
 		root_stack = top;
+		/** new code matched; clean children of current top **/
+		free_more_children_stack ();
 	}
 	return top;
 }
@@ -427,6 +439,8 @@ static stack_container* deep_visit(jint code) {
 		free_stack(matched_children);
 	} else {
 		root_stack = top;
+		/** new code matched; clean children of current top **/
+		free_more_children_stack ();
 	}
 	return top;
 }
@@ -546,76 +560,13 @@ void Java_com_easy_ChIME_CTextGen_releaseDict (JNIEnv* env, jobject obj)
 	}
 }
 
-static jint getMoreTextLen (jint maxSum)
-{
-	jint len = 0;
-	jint count = 0;
-	if (root_stack) {
-		/** 1st calculate the length of all text of children **/
-		stack_container *cont = (stack_container*)root_stack->element;
-		while (cont != NULL) {
-			/** try to find the children of the element**/
-			text_leaf *leaf = (text_leaf*)cont->element;
-			leaf = leaf->children;
-			while (leaf != NULL && count < maxSum) {
-				text_link *link = leaf->text;
-				/** we only get the first text **/
-				while (link != NULL && count < maxSum) {
-					len += strlen ((char*)link->content) + 1;
-					link = link->next;
-					count += 1;
-				}
-				leaf = leaf->sibling;
-			}
-			cont = cont->next;
-		}
-	}
-	return len;
-}
-
-static char* getMoreText (jint maxSum)
-{
-	jint len = getMoreTextLen (maxSum);
-	char *buf = NULL;
-	jint count = 0;
-	if (root_stack) {
-		if (len > 0) {
-			buf = (char*)malloc (len + 1);
-			len = 0;
-		}
-		if (buf == NULL) {
-			return NULL;
-		}
-		stack_container *cont = (stack_container*)root_stack->element;
-		while (cont != NULL) {
-			/** try to find the children of the element**/
-			text_leaf *leaf = (text_leaf*)cont->element;
-			leaf = leaf->children;
-			while (leaf != NULL && count < maxSum) {
-				text_link *link = leaf->text;
-				/** only copy one text **/
-				while (link != NULL && count < maxSum) {
-					jint cplen = strlen ((char*)link->content);
-					memcpy (buf + len, link->content, cplen);
-					len += cplen;
-					*(buf + len) = '\n';
-					len += 1;
-					link = link->next;
-					count += 1;
-				}
-				leaf = leaf->sibling;
-			}
-			cont = cont->next;
-		}
-		*(buf + len) = 0;
-	}
-	return buf;
-}
-
 
 jstring Java_com_easy_ChIME_CTextGen_getMoreText (JNIEnv* env, jobject obj, jint maxSum)
 {
-	char *buf = getMoreText (maxSum);
+	if (more_children_stack == NULL) {
+		init_more_children_stack ();
+	}
+	char *buf = get_more_text (maxSum);
 	jstring result = NULL;
 	if (buf) {
 #ifdef __cplusplus
@@ -626,5 +577,123 @@ jstring Java_com_easy_ChIME_CTextGen_getMoreText (JNIEnv* env, jobject obj, jint
 		free (buf);
 	}
 	return result;
+}
+
+static int safed_push_children_stack (void *cont)
+{
+	stack_container *head = push_stack (more_children_stack, cont);
+	if (head) {
+		more_children_stack = head;
+		return 1;
+	}
+	return 0;
+}
+
+static void free_more_children_stack ()
+{
+	if (more_children_stack) {
+		free_stack (more_children_stack);
+		more_children_stack = NULL;
+	}
+}
+
+static void init_more_children_stack ()
+{
+	
+	if (root_stack) {
+		stack_container *cont = (stack_container*)root_stack->element;
+		while (cont != NULL) {
+			/** get text_leaf's first child and store **/
+			text_leaf *leaf = (text_leaf*)cont->element;
+			if (leaf->children) {
+				safed_push_children_stack (leaf->children);
+			}
+			/** move next **/
+			cont = cont->next;
+		}
+	}
+}
+
+
+static jint get_more_text_len (jint toget)
+{
+	jint len = 0;
+	jint count = 0;
+	if (!more_children_stack) {
+		return len;
+	}
+	text_leaf *leaf = (text_leaf*)more_children_stack->element;
+	more_children_stack = pop_stack (more_children_stack);
+
+	while (leaf && count < toget) {
+		text_link *link = leaf->text;
+		/** copy a pointer of current node to more_text_stack **/
+		if (link) {
+			stack_container *head = push_stack (more_text_stack, leaf);
+			if (head) {
+				more_text_stack = head;
+			} else {
+				return len;
+			}
+			/** get current nodes text count and length **/
+			while (link != NULL) {
+				len += strlen ((char*)link->content) + 1;
+				count += 1;
+				link = link->next;
+			}
+		}
+		if (count < toget) {
+			/** store sibling and visit children **/
+			if (leaf->children) {
+				if (leaf->sibling) {
+					safed_push_children_stack (leaf->sibling);
+				}
+				leaf = leaf->children;
+			} else if (leaf->sibling) {
+				leaf = leaf->sibling;
+			} else if (more_children_stack) {
+				leaf = (text_leaf*)more_children_stack->element;
+				more_children_stack = pop_stack (more_children_stack);
+			} else {
+				leaf = NULL;
+			}
+		} else {
+			if (leaf->sibling) {
+				safed_push_children_stack (leaf->sibling);
+			}
+			if (leaf->children) {
+				safed_push_children_stack (leaf->children);
+			}
+		}
+	}
+	return len;
+}
+
+static char* get_more_text (jint toget)
+{
+	char *buf = NULL;
+	jint len = get_more_text_len (toget);
+	if (len > 0) {
+		buf = (char*)malloc (len + 1);
+	}
+	if (buf) {
+		len = 0;
+		/** here more_text_stack must not empty **/
+		while (more_text_stack) {
+			text_leaf *leaf = (text_leaf*)more_text_stack->element;
+			text_link *link = leaf->text;
+			while (link != NULL) {
+				jint cpd = strlen ((char*)link->content);
+				memcpy (buf + len, link->content, cpd);
+				len += cpd;
+				*(buf + len) = '\n';
+				len += 1;
+				link = link->next;
+			}
+			more_text_stack = pop_stack (more_text_stack);
+		}
+		*(buf + len) = 0;
+	}
+	return buf;
 }
 
