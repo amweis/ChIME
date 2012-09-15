@@ -414,7 +414,6 @@ public class ChIME extends InputMethodService
 			handleClose();
 			break;
 		case Keyboard.KEYCODE_MODE_CHANGE:
-			Log.v("ChIME", "Chime, change mode");
 			this.changeKeyLabel(this.getTextName(inEnglish ? this.inputText : -1));
 			break;
 		case KEYCODE_QUICK_COM:
@@ -438,7 +437,8 @@ public class ChIME extends InputMethodService
 			}
 			break;
 		default:
-			if (handleCharacter(primaryCode, keyCodes) != 0) {
+			primaryCode = handleCharacter(primaryCode, keyCodes);
+			if (primaryCode != 0) {
 				if (primaryCode == Keyboard.KEYCODE_DELETE) {
 					this.keyDownUp(KeyEvent.KEYCODE_DEL);
 				} else {

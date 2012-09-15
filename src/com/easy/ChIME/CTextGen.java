@@ -283,7 +283,7 @@ public class CTextGen {
 	
 	private void parseInputText(ArrayList<String> result, String text) {
 		if (text != null) {
-			String[] arrtext = text.split("\n");
+			String[] arrtext = text.split(" ");
 			for (int i = 0; i < arrtext.length; ++i) {
 				if (!result.contains(arrtext[i])) {
 					result.add(arrtext[i]);

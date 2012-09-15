@@ -121,7 +121,7 @@ public:
 
 	void get_more_text () {
 			char *buf = NULL;;
-		    while ((buf = ::get_more_text (4)) != NULL) {
+		    while ((buf = ::get_more_text (2)) != NULL) {
 				std::cout << "get_more_text buf = " << buf << std::endl;
 				free (buf);
 			}

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C)  Easy Technology, Inc.
+ *  Copyright (C)  Easy Technology., Inc.
  *
  *  Authors: Roy Wei (Wei shufeng)
  *

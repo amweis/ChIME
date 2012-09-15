@@ -9,13 +9,16 @@ static text_leaf *root_tree = NULL;
 static stack_container *root_stack = NULL;
 /** more_children_stack is used to store current children leafs of current matched
   * it will be initialized when more text wanted, and released when new code matched
+  * or handle Delete
   */
 static stack_container *more_children_stack = NULL;
 /** more_text_stack is used to store the visited leafs of more_children_stack and 
-  * it's text will be presented to caller. it is initialized when visiting more_children_stack
+  * it's text will be presented to caller. it is initialized when get_more_text_len was called
   * and will be released after it's content has been read.
+  * In fact, it's life cycle should always in get_more_text.
   */
 static stack_container *more_text_stack = NULL;
+static int more_children_inited = 0;
 
 /** code section */
 
@@ -187,7 +190,6 @@ static jbyte* skipWhiteSpace(jbyte *start, jbyte* end) {
 
 static void build_text_leaf(text_leaf *leaf, jbyte *start, jbyte *end) {
 	text_leaf *child = leaf;
-	jbyte *word = NULL;
 	/** first build keys (character till white space) **/
 	while (start < end && child) {
 		if (whiteSpace(*start)) {
@@ -204,16 +206,9 @@ static void build_text_leaf(text_leaf *leaf, jbyte *start, jbyte *end) {
 	if (NULL == child) {
 		return;
 	}
-	/* now build and */
+
 	start = skipWhiteSpace(start, end);
-	for (word = start; word < end; ++word) {
-		if (whiteSpace(*word)) {
-			add_word(child, start, word);
-			word = skipWhiteSpace(word, end);
-			start = word;
-		}
-	}
-	add_word(child, start, word);
+	add_word (child, start, end);
 }
 
 static jbyte* build_text_tree(jbyte *buf, jbyte *end) {
@@ -501,7 +496,7 @@ jint cpyInputText (char *buf, jint len)
 					contlen = strlen ((char*)link->content);
 					if (result + contlen < len) {
 						memcpy (buf, link->content, contlen);
-						*(buf + contlen) = '\n';
+						*(buf + contlen) = ' ';
 						buf += contlen + 1;
 						result += contlen + 1;
 					}
@@ -512,7 +507,6 @@ jint cpyInputText (char *buf, jint len)
 		cont = cont->next;
 	}
 	return result;
-
 }
 
 
@@ -546,6 +540,7 @@ void Java_com_easy_ChIME_CTextGen_nativeHandleDelete (JNIEnv* env, jobject obj)
 #endif
 	if (root_stack) {
 		root_stack = pop_stack (root_stack);
+		free_more_children_stack ();
 	}
 #ifdef DEBUG
 	LOGV ("out handleDelete root_stack = %d", root_stack);
@@ -563,8 +558,9 @@ void Java_com_easy_ChIME_CTextGen_releaseDict (JNIEnv* env, jobject obj)
 
 jstring Java_com_easy_ChIME_CTextGen_getMoreText (JNIEnv* env, jobject obj, jint maxSum)
 {
-	if (more_children_stack == NULL) {
+	if (!more_children_inited) {
 		init_more_children_stack ();
+		more_children_inited = 1;
 	}
 	char *buf = get_more_text (maxSum);
 	jstring result = NULL;
@@ -595,11 +591,11 @@ static void free_more_children_stack ()
 		free_stack (more_children_stack);
 		more_children_stack = NULL;
 	}
+	more_children_inited = 0;
 }
 
 static void init_more_children_stack ()
 {
-	
 	if (root_stack) {
 		stack_container *cont = (stack_container*)root_stack->element;
 		while (cont != NULL) {
@@ -620,6 +616,7 @@ static jint get_more_text_len (jint toget)
 	jint len = 0;
 	jint count = 0;
 	if (!more_children_stack) {
+		LOGV ("get_more_text_len more_children_stack is NULL");
 		return len;
 	}
 	text_leaf *leaf = (text_leaf*)more_children_stack->element;
@@ -643,14 +640,14 @@ static jint get_more_text_len (jint toget)
 			}
 		}
 		if (count < toget) {
-			/** store sibling and visit children **/
-			if (leaf->children) {
-				if (leaf->sibling) {
-					safed_push_children_stack (leaf->sibling);
+			/** store children and visit sibling **/
+			if (leaf->sibling) {
+				if (leaf->children) {
+					safed_push_children_stack (leaf->children);
 				}
-				leaf = leaf->children;
-			} else if (leaf->sibling) {
 				leaf = leaf->sibling;
+			} else if (leaf->children) {
+				leaf = leaf->children;
 			} else if (more_children_stack) {
 				leaf = (text_leaf*)more_children_stack->element;
 				more_children_stack = pop_stack (more_children_stack);
@@ -658,11 +655,11 @@ static jint get_more_text_len (jint toget)
 				leaf = NULL;
 			}
 		} else {
-			if (leaf->sibling) {
-				safed_push_children_stack (leaf->sibling);
-			}
 			if (leaf->children) {
 				safed_push_children_stack (leaf->children);
+			}
+			if (leaf->sibling) {
+				safed_push_children_stack (leaf->sibling);
 			}
 		}
 	}
@@ -686,7 +683,7 @@ static char* get_more_text (jint toget)
 				jint cpd = strlen ((char*)link->content);
 				memcpy (buf + len, link->content, cpd);
 				len += cpd;
-				*(buf + len) = '\n';
+				*(buf + len) = ' ';
 				len += 1;
 				link = link->next;
 			}

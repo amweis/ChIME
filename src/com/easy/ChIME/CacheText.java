@@ -31,9 +31,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.Stack;
 
-import android.util.Log;
-
-
 public class CacheText {
 	private TextItem[] mItems;
 	private int startPos = 0;
@@ -148,8 +145,6 @@ public class CacheText {
 			} else {
 				matchCached (code);
 			}
-			Log.v("ChIME", String.format("Cache.matchCodes,  code = %c, counter = %d, needSearch = %s, matchLen = %d",
-					code, counterStored, needSearch, mCache.size()));
 		}
 	}
 
@@ -240,10 +235,14 @@ public class CacheText {
 		Set<TextItem> items = top.keySet();
 		Iterator<TextItem> iter = items.iterator();
 		StringBuilder sb = new StringBuilder ();
+		boolean addSpace = false;
 		while (iter.hasNext()) {
 			TextItem t = iter.next();
+			if (addSpace) {
+				sb.append(" ");
+			}
 			sb.append(t.getText());
-			sb.append("\n");
+			addSpace = true;
 		}
 		return sb.toString();
 	}
