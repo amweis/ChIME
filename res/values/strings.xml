@@ -31,4 +31,6 @@
     <string name="label_setting">参数设置</string>
     <string name="label_IM">输入法</string>
     <string name="default_im">pinyin</string>
+    <string name="problem_feedback">问题反馈</string>
+    <string name="feedback_to">欢迎将问题或意见反馈给我: amweis.wei@gmail.com</string>
 </resources>

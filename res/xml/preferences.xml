@@ -33,5 +33,9 @@
     </PreferenceCategory>
     <PreferenceScreen android:key="select_ime" android:title="@string/label_IM">
     </PreferenceScreen>
+    <PreferenceCategory android:title="@string/problem_feedback">
+    	<PreferenceScreen android:key="feedback" android:title="@string/problem_feedback"
+    	android:summary="@string/feedback_to"></PreferenceScreen>
+    </PreferenceCategory>
 
 </PreferenceScreen>

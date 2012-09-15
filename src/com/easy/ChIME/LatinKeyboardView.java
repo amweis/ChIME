@@ -44,7 +44,6 @@ public class LatinKeyboardView extends KeyboardView {
         	tent.setAction("ACTION_MAIN");
         	tent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         	cont.startActivity(tent);
-        	Log.v("ChIME", "LatinKeyboardView.onLongPress");
             return true;
         } else {
             return super.onLongPress(key);
